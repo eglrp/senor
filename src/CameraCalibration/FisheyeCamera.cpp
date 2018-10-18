@@ -1,0 +1,49 @@
+#include "FisheyeCamera.h"
+#define _USE_MATH_DEFINES
+#include <math.h>
+#include <Common_GQ.h>
+using namespace cv;
+using namespace std;
+FisheyeCamera::FisheyeCamera()
+{
+
+}
+
+
+FisheyeCamera::~FisheyeCamera()
+{
+
+}
+
+void FisheyeCamera::InheritInitUndistortRectifyMap(const cv::Mat &R, const cv::Mat &K, const cv::Size &size, cv::Mat &mapx, cv::Mat &mapy)
+{
+	cv::fisheye::initUndistortRectifyMap(m_K, m_D, R, K, size, CV_32FC1, mapx, mapy);
+}
+
+void FisheyeCamera::InheritProjectPoints(const std::vector<cv::Point3f> &pts_3d, const cv::InputArray &r_vec, const cv::InputArray &t_vec, std::vector<cv::Point2f> &pts_2d)
+{
+	cv::fisheye::projectPoints(pts_3d, pts_2d, r_vec, t_vec, m_K, m_D);
+}
+
+void FisheyeCamera::InheritUndistortPoints(const std::vector<cv::Point2f> &pts_src, std::vector<cv::Point2f> &pts_dst)
+{
+	cv::fisheye::undistortPoints(pts_src, pts_dst, m_K, m_D);
+}
+
+double FisheyeCamera::InheritCalibrate(const std::vector<std::vector<cv::Point3f>> objects, const std::vector<std::vector<cv::Point2f>> &corners, std::vector<cv::Vec3d> &rotation_vectors, std::vector<cv::Vec3d> &translation_vectors, cv::TermCriteria critia, cv::Mat &idx)
+{
+	int flags = cv::fisheye::CALIB_FIX_SKEW;
+	flags |= cv::fisheye::CALIB_USE_INTRINSIC_GUESS;
+	flags |= cv::fisheye::CALIB_RECOMPUTE_EXTRINSIC;
+	double rms=cv::fisheye::calibrate(objects, corners, m_raw_size, m_K, m_D, rotation_vectors, translation_vectors, flags, critia);
+	size_t size = objects.size();
+	idx = cv::Mat(1, size,CV_32S);
+	for (size_t i = 0; i < size; i++)
+		idx.at<int>(i) = i;
+	return rms;
+}
+
+bool FisheyeCamera::InheritSovlePnP(const std::vector<cv::Point3f> &object_pts, const std::vector<cv::Point2f> &corners, cv::Mat &R, cv::Mat &T)
+{
+	return false;
+}
